@@ -135,7 +135,7 @@ Get a free NVD API key at: https://nvd.nist.gov/developers/request-an-api-key
   ██████╗  ██████╗ ███████╗ ██████╗ █████╗ ███╗   ██╗
  ...
 
-[*] Starting GoScanner at 2025-01-15 14:30:00
+[*] Starting Brutescan at 2025-01-15 14:30:00
 [*] Targets: 1 host(s) | Ports: 1000 | Threads: 1000 | Timeout: 1000ms
 
 [>] Scanning 192.168.1.1 ...
