@@ -1,4 +1,4 @@
-# ⚡ GoScanner — Advanced Network Scanner
+# ⚡ Butescan — Advanced Network Scanner
 
 A fast, feature-rich network scanner written in Go — inspired by **nmap** and **rustscan**.
 
