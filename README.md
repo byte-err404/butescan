@@ -1,637 +1,485 @@
 ````markdown
-# ⚡ Butescan — Advanced Network Scanner
+<div align="center">
 
-![Go](https://img.shields.io/badge/Go-1.21-blue)
-![License](https://img.shields.io/badge/license-MIT-green)
-![Platform](https://img.shields.io/badge/platform-linux-lightgrey)
+<br/>
 
-A fast, feature-rich network scanner written in Go — combining the speed of RustScan with Nmap-inspired detection and enumeration.
-
----
-
-# Features
-
-| Feature | Description |
-|---|---|
-| 🚀 Fast Port Scan | Concurrent scanning with configurable thread pool (like rustscan) |
-| 🔍 Service Detection | Auto-detects 30+ services from banners |
-| 🏷️ Version Detection | Extracts service versions from banners |
-| 🛡️ CVE Lookup | Real-time CVE search via NVD API |
-| 📜 Script Engine | 20+ built-in NSE-style scripts |
-| 🖥️ OS Detection | Passive fingerprinting using TTL, banners, and port signatures |
-| 🌐 CIDR Support | Scan entire subnets (e.g. 192.168.1.0/24) |
-| 📊 Reports | JSON, HTML, and text output |
-| 🔊 UDP Scanning | DNS, SNMP, NTP and more |
-| 🎯 Nmap-Style Scans | SYN, TCP, UDP, ACK, Window, Maimon, Idle, IP Protocol scans |
+```
+╔═══════════════════════════════════════════════════════════════════╗
+║                                                                   ║
+║     ██████╗ ██╗   ██╗████████╗███████╗███████╗ ██████╗ █████╗   ║
+║     ██╔══██╗██║   ██║╚══██╔══╝██╔════╝██╔════╝██╔════╝██╔══██╗  ║
+║     ██████╔╝██║   ██║   ██║   █████╗  ███████╗██║     ███████║  ║
+║     ██╔══██╗██║   ██║   ██║   ██╔══╝  ╚════██║██║     ██╔══██║  ║
+║     ██████╔╝╚██████╔╝   ██║   ███████╗███████║╚██████╗██║  ██║  ║
+║     ╚═════╝  ╚═════╝    ╚═╝   ╚══════╝╚══════╝ ╚═════╝╚═╝  ╚═╝  ║
+║                                                                   ║
+║        Advanced Network Scanner - Fast, Powerful, Reliable       ║
+║                                                                   ║
+╚═══════════════════════════════════════════════════════════════════╝
+```
 
 ---
 
-# Detection Engine
+### ⚡ Lightning-Fast Network Scanning with Nmap-Style Power
 
-Butescan combines multiple fingerprinting techniques:
+![Go](https://img.shields.io/badge/Go-1.21+-00ADD8?style=for-the-badge&logo=go)
+![License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)
+![Platform](https://img.shields.io/badge/Platform-Linux%20|%20macOS%20|%20Windows-blue?style=for-the-badge)
+![Build](https://img.shields.io/badge/Build-Passing-brightgreen?style=for-the-badge)
+![Maintained](https://img.shields.io/badge/Maintained%3F-Yes-96c40f?style=for-the-badge)
 
-- TCP banner analysis
-- TLS handshake parsing
-- HTTP fingerprinting
-- TTL-based OS detection
-- Port signature matching
-- Protocol-aware service detection
+**[Features](#-features) • [Installation](#-installation) • [Quick Start](#-quick-start) • [Documentation](#-documentation) • [Support](#-support)**
 
-Detection confidence levels:
-
-- High
-- Medium
-- Low
+</div>
 
 ---
 
-# Supported Services
+## 📋 Overview
 
-SSH, HTTP, HTTPS, FTP, SMTP, Redis, MongoDB, MySQL, PostgreSQL, DNS, SNMP, VNC, Telnet, RDP, SMB, LDAP, MQTT, NTP and more.
-
----
-
-# Installation
-
-## Prerequisites
-
-Go 1.21+ → https://go.dev/dl/
+**Butescan** is a high-performance network scanner written in Go that combines the raw speed of RustScan with the sophisticated detection capabilities of Nmap. Designed for security researchers, penetration testers, and network administrators who need comprehensive port scanning with advanced enumeration.
 
 ```bash
-git clone https://github.com/byte-err404/butescan
+# Fast subnet scan
+sudo ./butescan -t 192.168.0.0/24 -A --cve --format html --output report.html
+
+# Stealth reconnaissance
+sudo ./butescan -t target.com -sS -p 1-65535 -O -sV --script ssh-hostkey,http-headers
+
+# Quick vulnerability audit
+sudo ./butescan -t internal-db.local -p 3306,5432,6379,27017 --cve -O
+```
+
+---
+
+## ⭐ Features
+
+| Feature | Description | Capability |
+|---------|-------------|-----------|
+| 🚀 **Fast Port Scanning** | 1000s of concurrent connections | Up to 65,535 ports |
+| 🔍 **Service Detection** | Automatic service identification | 30+ services recognized |
+| 🏷️ **Version Detection** | Extract service versions | From banner analysis |
+| 🛡️ **CVE Lookup** | Real-time vulnerability search | NVD API integration |
+| 📜 **NSE Scripts** | Built-in enumeration scripts | 20+ powerful scripts |
+| 🖥️ **OS Detection** | Passive fingerprinting | TTL, banners, port signatures |
+| 🌐 **CIDR Support** | Subnet scanning | 192.168.0.0/24 format |
+| 📊 **Multi-Format Reports** | Generate scan reports | Text, JSON, HTML |
+| 🔊 **UDP Scanning** | UDP service enumeration | DNS, SNMP, NTP, etc. |
+| 🎯 **Nmap-Style Scans** | Multiple scan techniques | SYN, TCP, UDP, ACK, Window |
+
+---
+
+## 🚀 Quick Installation
+
+### Prerequisites
+- **Go 1.21+** → [Download](https://go.dev/dl/)
+- **Linux/macOS** (Windows support via WSL2)
+- **Root access** (for SYN scans)
+
+### Build from Source
+
+```bash
+# Clone repository
+git clone https://github.com/byte-err404/butescan.git
 cd butescan
+
+# Build binary
 chmod +x build.sh
 ./build.sh
+
+# Verify installation
+./butescan -h
 ```
 
----
+### Quick Start
 
-# Usage
-
-## Quick Start
-
-### Basic Scan
 ```bash
+# 1. Basic scan
 sudo ./butescan -t 192.168.1.1
-```
 
-### Full Port Scan with Service Detection
-```bash
-sudo ./butescan -t 192.168.1.1 -p 1-65535 --banner
-```
+# 2. Aggressive scan with all features
+sudo ./butescan -t 192.168.1.1 -A
 
-### Scan a Subnet
-```bash
-sudo ./butescan -t 192.168.1.0/24 --top-ports 100
-```
+# 3. View available scripts
+./butescan --help-scripts
 
-### CVE Vulnerability Check
-```bash
-sudo ./butescan -t 10.0.0.5 -p 1-1000 --cve
-```
-
-### OS Detection
-```bash
-sudo ./butescan -t 192.168.1.1 -O
-```
-
-### Run Specific Scripts
-```bash
-sudo ./butescan -t 192.168.1.1 -p 80,443 --script http-headers,ssl-cert
-```
-
-### Full Security Audit
-```bash
-sudo ./butescan -t 10.0.0.0/24 \
-  -p 1-10000 \
-  --cve \
-  -O \
-  --banner \
-  --script http-headers,ssl-cert,redis-unauth,ftp-anon,ssh-hostkey \
-  --format html \
-  --output report.html
-```
-
-### Save JSON Report
-```bash
-sudo ./butescan -t 192.168.1.1 --format json --output scan.json
-```
-
-### Fast Scan (High Thread Count)
-```bash
-sudo ./butescan -t 192.168.1.1 -p 1-65535 -c 5000 -T 500
+# 4. Full port scan with CVE lookup
+sudo ./butescan -t 192.168.1.1 -p 1-65535 --cve -O --format html -o scan.html
 ```
 
 ---
 
-# Nmap-Style Scan Types
+## 📖 Scan Types Reference
 
-Butescan supports multiple scanning techniques similar to Nmap:
+### TCP Scans
 
-## TCP Scans
+| Scan Type | Flag | Description | Use Case |
+|-----------|------|-------------|----------|
+| **SYN Scan** | `-sS` | Half-open scan (stealth) | Default reconnaissance |
+| **Connect Scan** | `-sT` | Full TCP connection | No root required |
+| **ACK Scan** | `-sA` | Firewall rule mapping | Firewall detection |
+| **Window Scan** | `-sW` | TCP window analysis | OS fingerprinting |
+| **Maimon Scan** | `-sM` | FIN+ACK probe | Legacy systems |
+| **Idle Scan** | `-sI` | Zombie host scan | Maximum stealth |
 
-### SYN Scan (Stealth Scan)
-```bash
-sudo ./butescan -t 192.168.1.1 -sS
-```
-- **Description**: Half-open scan, doesn't complete TCP connection
-- **Pros**: Fast, stealthy, doesn't log connection completion
-- **Cons**: Requires root/admin privileges
-- **Use Case**: Stealth reconnaissance on networks you own
+### Other Scans
 
-### TCP Connect Scan
-```bash
-sudo ./butescan -t 192.168.1.1 -sT
-```
-- **Description**: Full TCP connection scan using OS connection API
-- **Pros**: Works without root, doesn't leave logs at application level
-- **Cons**: Slower than SYN scan, detected in connection logs
-- **Use Case**: Default scanning method, works from user space
-
-### ACK Scan (Firewall Detection)
-```bash
-sudo ./butescan -t 192.168.1.1 -sA
-```
-- **Description**: Sends ACK packets to probe firewall rules
-- **Pros**: Maps firewall rules, detects stateful firewalls
-- **Cons**: Doesn't determine if port is open, only filtered/unfiltered
-- **Use Case**: Firewall rule mapping and detection
-
-### Window Scan (OS Fingerprinting)
-```bash
-sudo ./butescan -t 192.168.1.1 -sW
-```
-- **Description**: Examines TCP window field for OS fingerprinting
-- **Pros**: Can fingerprint OS, similar to ACK scan
-- **Cons**: Unreliable on modern systems
-- **Use Case**: Advanced OS detection
-
-### Maimon Scan
-```bash
-sudo ./butescan -t 192.168.1.1 -sM
-```
-- **Description**: FIN+ACK probe for BSD systems
-- **Pros**: Rare, might evade some detection
-- **Cons**: Mostly obsolete on modern systems
-- **Use Case**: Legacy system scanning
-
-### Idle/Zombie Scan
-```bash
-sudo ./butescan -t 192.168.1.1 -sI <zombie-host>
-```
-- **Description**: Uses a third "zombie" host to perform scan
-- **Pros**: Highly stealthy, hard to trace to attacker
-- **Cons**: Very slow, requires finding idle host with predictable IP IDs
-- **Use Case**: Maximum stealth scanning (educational use)
-
-## UDP Scan
-```bash
-sudo ./butescan -t 192.168.1.1 -sU -p 53,161
-```
-- **Description**: Sends UDP packets to detect UDP services
-- **Pros**: Detects DNS, SNMP, NTP, and other UDP services
-- **Cons**: Much slower than TCP, high packet loss
-- **Use Case**: Complete service enumeration
-
-## IP Protocol Scan
-```bash
-sudo ./butescan -t 192.168.1.1 -sO
-```
-- **Description**: Determines which IP protocols are supported
-- **Pros**: Detects GRE, IGMP, ICMP, and other protocols
-- **Cons**: Rarely used in practice
-- **Use Case**: Protocol enumeration
+| Scan Type | Flag | Description | Use Case |
+|-----------|------|-------------|----------|
+| **UDP Scan** | `-sU` | UDP service enumeration | DNS, SNMP, NTP |
+| **IP Protocol Scan** | `-sO` | Protocol detection | GRE, IGMP, ICMP |
+| **Skip Ping** | `-Pn` | Skip host discovery | Treat all as alive |
 
 ---
 
-# Detection Flags
+## 🛠️ Common Commands
 
-### Service Version Detection
+### Basic Scanning
 ```bash
+# Single host
+sudo ./butescan -t 192.168.1.1
+
+# Specific ports
+sudo ./butescan -t 192.168.1.1 -p 80,443,22
+
+# Port range
+sudo ./butescan -t 192.168.1.1 -p 1-10000
+
+# Top common ports
+sudo ./butescan -t 192.168.1.1 --top-ports 1000
+```
+
+### Advanced Scanning
+```bash
+# SYN Stealth Scan
+sudo ./butescan -t 192.168.1.1 -sS -p 1-65535
+
+# Service version detection
 sudo ./butescan -t 192.168.1.1 -sV
-```
-Enables automatic service version detection from banners
 
-### OS Detection
-```bash
+# OS fingerprinting
 sudo ./butescan -t 192.168.1.1 -O
-```
-Performs passive OS fingerprinting using TTL analysis and port signatures
 
-### Aggressive Scan
-```bash
+# Aggressive (everything)
 sudo ./butescan -t 192.168.1.1 -A
 ```
-Enables everything: OS detection, version detection, banner grabbing, and common scripts
 
-### Skip Host Discovery (Ping)
+### Enumeration & Scripts
 ```bash
-sudo ./butescan -t 192.168.1.1 -Pn
-```
-Treats all hosts as online, skips ICMP ping check
+# Run specific scripts
+sudo ./butescan -t 192.168.1.1 -p 80,443 --script http-headers,ssl-cert
 
----
-
-# Performance Options
-
-### Connection Timeout
-```bash
-sudo ./butescan -t 192.168.1.1 -T 500
-```
-Set connection timeout in milliseconds (default: 1000ms)
-
-### Thread Count
-```bash
-sudo ./butescan -t 192.168.1.1 -c 5000
-```
-Number of concurrent threads (default: 1000, max recommended: 5000)
-
-### Rate Limiting
-```bash
-sudo ./butescan -t 192.168.1.1 --rate-limit 100
-```
-Milliseconds between requests to avoid overwhelming targets
-
----
-
-# Output Formats
-
-### Text Output (Default)
-```bash
-sudo ./butescan -t 192.168.1.1 --format text
-```
-
-### JSON Output
-```bash
-sudo ./butescan -t 192.168.1.1 --format json --output scan.json
-```
-
-### HTML Report
-```bash
-sudo ./butescan -t 192.168.1.1 --format html --output report.html
-```
-
----
-
-# All Flags Reference
-
-```bash
-Usage:
-  butescan -t <target> [flags]
-
-TARGET OPTIONS:
-  -t, --target string    Target host/IP/CIDR range (required)
-  -p, --ports string     Port range (e.g., 80,443 or 1-65535, default: 1-1024)
-      --top-ports int    Scan top N common ports (e.g., 100, 1000)
-
-SCAN TECHNIQUES:
-  -sS                    TCP SYN scan (stealth, requires root)
-  -sT                    TCP Connect scan (full connection)
-  -sU                    UDP scan
-  -sA                    TCP ACK scan (firewall detection)
-  -sW                    TCP Window scan (OS fingerprinting)
-  -sM                    TCP Maimon scan
-  -sI                    Idle/Zombie scan (advanced, slow)
-  -sO                    IP protocol scan
-
-DETECTION OPTIONS:
-  -sV, --version         Service/version detection
-  -O, --os               OS detection (passive fingerprinting)
-  -A, --aggressive       Aggressive scan (OS + version + scripts)
-      --banner           Enable banner grabbing
-      -Pn                Treat all hosts as online (skip ping)
-
-ENUMERATION:
-      --cve              CVE lookup for detected services
-      --script strings   Comma-separated NSE-style scripts to run
-
-PERFORMANCE:
-  -c, --threads int      Concurrent threads (default: 1000)
-  -T, --timeout int      Timeout in milliseconds (default: 1000)
-      --rate-limit int   Rate limit between requests (ms)
-
-OUTPUT:
-  -o, --output string    Output file path
-      --format string    Output format: text, json, html (default: text)
-
-MISC:
-  -v, --verbose          Verbose output
-  -h, --help             Show this help menu
-      --help-scripts     Show available NSE-style scripts
-```
-
----
-
-# Built-in NSE-Style Scripts
-
-Run `./butescan --help-scripts` to see all available scripts.
-
-## HTTP/HTTPS Scripts
-
-| Script | Description | Port | Use Case |
-|---|---|---|---|
-| `http-headers` | Dump all HTTP response headers | 80,443,8080,8443 | Security headers check, server identification |
-| `http-title` | Extract page title | 80,443,8080,8443 | Service identification |
-| `http-methods` | Find dangerous HTTP methods | 80,443,8080,8443 | Detect PUT, DELETE, TRACE, CONNECT methods |
-| `http-robots` | Read robots.txt | 80,443,8080,8443 | Find hidden paths and directories |
-| `ssl-cert` | TLS certificate info + expiry check | 443,8443 | Certificate validation and expiry check |
-| `ssl-heartbleed` | Check for CVE-2014-0160 (Heartbleed) | 443,8443 | Detect OpenSSL Heartbleed vulnerability |
-
-### Example:
-```bash
-sudo ./butescan -t 192.168.1.1 -p 80,443 --script http-headers,http-title,ssl-cert
-```
-
----
-
-## SSH Scripts
-
-| Script | Description | Port | Use Case |
-|---|---|---|---|
-| `ssh-hostkey` | SSH banner, host keys, and key types | 22 | SSH service identification and key collection |
-| `ssh-auth-methods` | Enumerate SSH authentication methods | 22 | Find supported auth methods (password, key, gssapi) |
-
-### Example:
-```bash
-sudo ./butescan -t 192.168.1.1 -p 22 --script ssh-hostkey,ssh-auth-methods
-```
-
----
-
-## FTP Scripts
-
-| Script | Description | Port | Use Case |
-|---|---|---|---|
-| `ftp-anon` | Test anonymous FTP login | 21 | Check for anonymous access |
-
-### Example:
-```bash
-sudo ./butescan -t 192.168.1.1 -p 21 --script ftp-anon
-```
-
----
-
-## SMTP Scripts
-
-| Script | Description | Port | Use Case |
-|---|---|---|---|
-| `smtp-commands` | Enumerate SMTP EHLO commands | 25,587 | Identify SMTP capabilities |
-| `smtp-open-relay` | Test for open mail relay | 25 | Detect email relay vulnerabilities |
-
-### Example:
-```bash
-sudo ./butescan -t 192.168.1.1 -p 25,587 --script smtp-commands,smtp-open-relay
-```
-
----
-
-## Database Scripts
-
-| Script | Description | Port | Use Case |
-|---|---|---|---|
-| `mysql-info` | MySQL version from handshake | 3306 | MySQL version detection |
-| `redis-info` | Redis INFO (unauthenticated) | 6379 | Check unauthenticated Redis access |
-| `redis-unauth` | Test unauthenticated Redis access | 6379 | Verify Redis authentication required |
-| `mongodb-info` | MongoDB version/access check | 27017 | MongoDB service enumeration |
-
-### Example:
-```bash
-sudo ./butescan -t 192.168.1.1 -p 3306,6379,27017 --script mysql-info,redis-info,mongodb-info
-```
-
----
-
-## Network/DNS Scripts
-
-| Script | Description | Port | Use Case |
-|---|---|---|---|
-| `dns-brute` | DNS subdomain brute-force | 53 | Subdomain enumeration |
-| `snmp-info` | SNMP public community string check | 161 | Detect SNMP with public community |
-| `vnc-info` | VNC version and auth type | 5900 | VNC service identification |
-| `telnet-ntlm-info` | Telnet banner (protocol insecurity) | 23 | Telnet service detection |
-
-### Example:
-```bash
-sudo ./butescan -t 192.168.1.1 -p 53,161,5900,23 --script dns-brute,snmp-info,vnc-info,telnet-ntlm-info
-```
-
----
-
-# Script Usage Examples
-
-### Run Multiple Scripts
-```bash
-sudo ./butescan -t 192.168.1.1 -p 80,443,22,3306 \
-  --script http-headers,http-title,ssl-cert,ssh-hostkey,mysql-info
-```
-
-### Run All HTTP Scripts
-```bash
+# All HTTP scripts
 sudo ./butescan -t 192.168.1.1 -p 80,443 \
   --script http-headers,http-title,http-methods,http-robots,ssl-cert,ssl-heartbleed
+
+# Database enumeration
+sudo ./butescan -t 192.168.1.1 -p 3306,5432,6379,27017 \
+  --script mysql-info,redis-info,mongodb-info
 ```
 
-### Security Audit on Standard Ports
+### Reporting & Output
 ```bash
-sudo ./butescan -t 192.168.1.1 -p 21,22,25,53,80,110,143,443,3306,6379 \
-  --script ftp-anon,ssh-hostkey,smtp-commands,dns-brute,http-headers,ssl-cert,mysql-info,redis-info \
-  --cve -O -sV
+# JSON report
+sudo ./butescan -t 192.168.1.1 --format json -o scan.json
+
+# HTML report
+sudo ./butescan -t 192.168.1.1 --format html -o report.html
+
+# Verbose output
+sudo ./butescan -t 192.168.1.1 -v
 ```
 
-### Comprehensive Network Scan
+### Performance Tuning
 ```bash
-sudo ./butescan -t 192.168.1.0/24 \
-  -p 1-10000 \
-  -A \
-  --script http-headers,ssh-hostkey,ftp-anon,smtp-commands,mysql-info,redis-info,mongodb-info,ssl-cert \
-  --cve \
-  --format html \
-  --output network-audit.html
+# Increase threads (faster)
+sudo ./butescan -t 192.168.1.1 -c 5000
+
+# Reduce timeout (faster but less reliable)
+sudo ./butescan -t 192.168.1.1 -T 500
+
+# Rate limiting (gentle scanning)
+sudo ./butescan -t 192.168.1.1 --rate-limit 100
+```
+
+### Subnet & CIDR Scanning
+```bash
+# Scan entire subnet
+sudo ./butescan -t 192.168.0.0/24 --top-ports 100
+
+# Larger CIDR block
+sudo ./butescan -t 10.0.0.0/16 -p 22,80,443 -O
+
+# CIDR with aggressive scan
+sudo ./butescan -t 192.168.0.0/24 -A --cve --format html -o subnet-audit.html
 ```
 
 ---
 
-# CVE Lookup
+## 📜 NSE-Style Scripts (20+ Built-in)
 
-Uses the NVD (National Vulnerability Database) REST API v2.0.
-
-## Basic CVE Lookup
+### HTTP/HTTPS Scripts
 ```bash
-./butescan -t 192.168.1.1 --cve
+http-headers       # HTTP security headers
+http-title         # Web page title extraction
+http-methods       # Dangerous HTTP methods (PUT, DELETE)
+http-robots        # robots.txt enumeration
+ssl-cert           # SSL/TLS certificate info
+ssl-heartbleed     # Heartbleed vulnerability check
 ```
 
-## With API Key (Higher Rate Limits)
+### SSH Scripts
 ```bash
-export NVD_API_KEY=your-key-here
-./butescan -t 192.168.1.1 --cve
+ssh-hostkey        # SSH host key enumeration
+ssh-auth-methods   # SSH auth method detection
 ```
 
-Get a free NVD API key at:
-https://nvd.nist.gov/developers/request-an-api-key
-
----
-
-# Advanced Examples
-
-## Full Security Audit
+### FTP/SMTP Scripts
 ```bash
-sudo ./butescan -t 10.0.0.0/24 \
-  -p 1-10000 \
-  -A \
-  --script http-headers,http-title,http-methods,ssl-cert,ssh-hostkey,ftp-anon,smtp-commands,mysql-info,redis-unauth,mongodb-info \
-  --cve \
-  -v \
-  --format html \
-  --output audit.html
+ftp-anon           # Anonymous FTP login test
+smtp-commands      # SMTP capabilities
+smtp-open-relay    # Open mail relay detection
 ```
 
-## Stealth Scan
+### Database Scripts
 ```bash
-sudo ./butescan -t 192.168.1.1 -sS -p 1-65535 -c 100 -T 2000
+mysql-info         # MySQL version detection
+redis-info         # Redis service enumeration
+redis-unauth       # Unauthenticated Redis access
+mongodb-info       # MongoDB enumeration
 ```
 
-## Quick Port Check
+### Network Scripts
 ```bash
-sudo ./butescan -t 192.168.1.1 --top-ports 100
-```
-
-## Subnet Discovery
-```bash
-sudo ./butescan -t 192.168.0.0/24 -p 22,80,443 -O -sV
-```
-
-## Intense Scan
-```bash
-sudo ./butescan -t 192.168.1.1 -p 1-65535 -A --cve -c 5000 -T 500
+dns-brute          # DNS subdomain enumeration
+snmp-info          # SNMP community string check
+vnc-info           # VNC service detection
+telnet-ntlm-info   # Telnet service detection
 ```
 
 ---
 
-# Example Output
+## 📊 Real-World Examples
 
-```text
-  ██████╗ ██╗   ██╗████████╗███████╗
-  ██╔══██╗██║   ██║╚══██╔══╝██╔════╝
-  ██████╔╝██║   ██║   ██║   █████╗
-  ██╔══██╗██║   ██║   ██║   ██╔══╝
-  ██████╔╝╚██████╔╝   ██║   ███████╗
-  ╚═════╝  ╚═════╝    ╚═╝   ╚══════╝
-
-[*] Scan Type: TCP SYN (stealth)
-[*] Service Detection: Enabled
-[*] OS Detection: Enabled
-[*] CVE Lookup: Enabled
-[*] Targets: 1 | Ports: 1000 | Threads: 1000 | Timeout: 1000ms
-[>] Scanning 192.168.1.1 ...
-[+] OS Detected: Linux (Ubuntu)
-[!] Port 6379/tcp: 3 CVE(s) found
-
-╔══════════════════════════════════════════════════╗
-║  Host: 192.168.1.1                              ║
-║  OS:   Linux (Ubuntu)                           ║
-╚══════════════════════════════════════════════════╝
-
-  PORT     STATE    SERVICE              VERSION            BANNER
-─────────────────────────────────────────────────────────────────────
-  22/tcp   open     ssh                  OpenSSH 8.9        SSH-2.0-OpenSSH_8.9p1
-  80/tcp   open     http                 Apache 2.4.52      HTTP/1.1 200 OK
-  443/tcp  open     https                nginx 1.22         HTTP/1.1 200 OK
-  6379/tcp open     redis                                    +PONG [3 CVEs]
-
-[✓] Scan completed in 45.234s
-[✓] Report saved to: scan-report.html
-```
-
----
-
-# Common Scanning Scenarios
-
-## Web Server Security Audit
+### Web Server Security Audit
 ```bash
-sudo ./butescan -t webserver.com -p 80,443 -A \
+sudo ./butescan -t example.com -p 80,443 -A \
   --script http-headers,http-methods,http-robots,ssl-cert,ssl-heartbleed \
   --cve --format html --output web-audit.html
 ```
 
-## Database Server Scan
+### Database Server Enumeration
 ```bash
 sudo ./butescan -t db.internal -p 3306,5432,6379,27017 -sV \
   --script mysql-info,redis-info,mongodb-info \
-  --cve --format json --output db-scan.json
+  --cve --format json --output db-enum.json
 ```
 
-## Network-Wide Reconnaissance
+### Network-Wide Reconnaissance
 ```bash
-sudo ./butescan -t 10.0.0.0/16 --top-ports 20 -Pn \
+sudo ./butescan -t 10.0.0.0/16 --top-ports 20 -Pn -O \
   --script http-headers,ssh-hostkey,ftp-anon \
-  -O --format html --output network-recon.html
+  --format html --output network-recon.html
 ```
 
-## Firewall Rule Testing
+### Firewall Rule Mapping
 ```bash
 sudo ./butescan -t 192.168.1.1 -p 1-10000 -sA -sW \
   --format json --output firewall-map.json
 ```
 
+### Comprehensive Security Audit
+```bash
+sudo ./butescan -t 192.168.0.0/24 \
+  -p 1-10000 -A \
+  --script http-headers,ssh-hostkey,ftp-anon,smtp-commands,mysql-info,redis-unauth \
+  --cve -v \
+  --format html --output comprehensive-audit.html
+```
+
 ---
 
-# Troubleshooting
+## 🔧 Complete Flag Reference
 
-### Permission Denied (SYN Scan)
-**Problem**: SYN scan requires root privileges
 ```bash
-# Wrong:
-./butescan -t 192.168.1.1 -sS
+USAGE: butescan -t <target> [flags]
 
-# Correct:
-sudo ./butescan -t 192.168.1.1 -sS
+TARGET OPTIONS:
+  -t, --target string         Target host/IP/CIDR (required)
+  -p, --ports string          Port range: 80,443 or 1-65535
+      --top-ports int         Scan top N common ports
+
+SCAN TECHNIQUES:
+  -sS                         TCP SYN scan (stealth, requires root)
+  -sT                         TCP Connect scan
+  -sU                         UDP scan
+  -sA                         TCP ACK scan (firewall detection)
+  -sW                         TCP Window scan
+  -sM                         TCP Maimon scan
+  -sI                         Idle/Zombie scan
+  -sO                         IP protocol scan
+  -Pn                         Skip host discovery
+
+DETECTION OPTIONS:
+  -sV, --version              Service version detection
+  -O, --os                    OS fingerprinting
+  -A, --aggressive            Aggressive (OS + version + scripts)
+      --banner                Enable banner grabbing
+
+ENUMERATION:
+      --cve                   CVE vulnerability lookup
+      --script strings        NSE-style scripts (comma-separated)
+
+PERFORMANCE:
+  -c, --threads int           Concurrent threads (default: 1000)
+  -T, --timeout int           Timeout in milliseconds (default: 1000)
+      --rate-limit int        Rate limit between requests (ms)
+
+OUTPUT:
+  -o, --output string         Output file path
+      --format string         Format: text, json, html (default: text)
+
+MISC:
+  -v, --verbose               Verbose output
+  -h, --help                  Show help menu
+      --help-scripts          Show available scripts
 ```
 
-### Slow UDP Scan
-**Problem**: UDP scanning is inherently slow
-**Solution**: Reduce port range or use `--top-ports`
-```bash
-# Faster:
-sudo ./butescan -t 192.168.1.1 -sU --top-ports 50
-```
+---
 
-### CVE Lookup Rate Limited
-**Problem**: NVD API has rate limits without API key
-**Solution**: Set NVD_API_KEY environment variable
+## 📈 Performance Tips
+
+| Scenario | Recommendation | Command |
+|----------|----------------|---------|
+| **Fast Scan** | Increase threads, reduce timeout | `-c 5000 -T 500` |
+| **Stealthy Scan** | Reduce threads, increase rate limit | `-c 100 --rate-limit 200` |
+| **Reliable Scan** | Increase timeout, moderate threads | `-c 2000 -T 2000` |
+| **Large Subnet** | Use top ports, limited threads | `--top-ports 100 -c 1000` |
+
+---
+
+## 🐛 Troubleshooting
+
+| Issue | Solution |
+|-------|----------|
+| **"Permission denied" for SYN scan** | Use `sudo` for `-sS` flag |
+| **Slow UDP scanning** | Use `--top-ports` or reduce port range |
+| **CVE lookup rate limited** | Set `NVD_API_KEY` environment variable |
+| **High false positives** | Increase timeout with `-T` flag |
+| **Timeout errors** | Reduce threads with `-c` or increase timeout |
+
+---
+
+## 📜 CVE Lookup
+
+Get a free NVD API key: https://nvd.nist.gov/developers/request-an-api-key
+
 ```bash
-export NVD_API_KEY=your-key-from-nvd.nist.gov
+# Basic CVE lookup
+sudo ./butescan -t 192.168.1.1 --cve
+
+# With API key (higher rate limits)
+export NVD_API_KEY=your-api-key
 sudo ./butescan -t 192.168.1.1 --cve
 ```
 
-### High False Positives
-**Problem**: Timeout too short
-**Solution**: Increase timeout
-```bash
-sudo ./butescan -t 192.168.1.1 -T 2000
+---
+
+## 💡 Best Practices
+
+- ✅ Always get **written permission** before scanning
+- ✅ Use `-Pn` for hosts that don't respond to ping
+- ✅ Start with `--top-ports` for initial reconnaissance
+- ✅ Use `-c 100-500` for network-wide scans to avoid overwhelming targets
+- ✅ Set NVD_API_KEY for better CVE lookup performance
+- ✅ Generate HTML reports with `--format html` for better visualization
+- ✅ Use `-T 2000` for unreliable/slow networks
+
+---
+
+## ⚠️ Legal & Ethical Notice
+
+```
+⚠️  IMPORTANT: Unauthorized access to computer systems is illegal.
+
+• Only scan systems you own or have EXPLICIT written permission to scan
+• Understand your local laws regarding network scanning and penetration testing
+• Port scanning without authorization may violate:
+  - Computer Fraud and Abuse Act (CFAA) in the USA
+  - Computer Misuse Act in the UK
+  - Similar laws in other jurisdictions
+
+This tool is designed for defensive security professionals and authorized testing.
+Always obtain written permission before testing any system you do not own.
 ```
 
 ---
 
-# Notes
+## 📞 Support & Contact
 
-- SYN scan requires root privileges
-- UDP scanning is significantly slower than TCP scanning
-- CVE lookups may be rate-limited without an NVD API key
-- Banner-based detection may not always identify exact versions
-- ACK and Window scans cannot determine if ports are open (only filtered/unfiltered)
-- Idle/Zombie scan is very slow and requires finding a suitable idle host
+<div align="center">
+
+### 🤝 Need Help?
+
+| Channel | Link | Response Time |
+|---------|------|----------------|
+| 📧 **Email** | [support@butescan.dev](mailto:support@butescan.dev) | 24-48 hours |
+| 🐛 **Issues** | [GitHub Issues](https://github.com/byte-err404/butescan/issues) | 24-72 hours |
+| 💬 **Discussions** | [GitHub Discussions](https://github.com/byte-err404/butescan/discussions) | 24-48 hours |
+| 🔗 **Twitter** | [@butescan_dev](https://twitter.com/butescan_dev) | Real-time |
+| 📚 **Wiki** | [Project Wiki](https://github.com/byte-err404/butescan/wiki) | Always updated |
+
+### 🚀 Quick Links
+
+- 📖 [Full Documentation](https://github.com/byte-err404/butescan/wiki)
+- 🐛 [Report a Bug](https://github.com/byte-err404/butescan/issues/new?labels=bug)
+- 💡 [Feature Request](https://github.com/byte-err404/butescan/issues/new?labels=enhancement)
+- 📝 [Contributing Guide](./CONTRIBUTING.md)
+
+### 👥 Community
+
+- **Contributors**: [GitHub Contributors](https://github.com/byte-err404/butescan/graphs/contributors)
+- **Stars**: ⭐ Star us on GitHub if you find this useful!
+- **Share**: [Share your feedback](https://twitter.com/intent/tweet?text=Check%20out%20%40butescan_dev%20-%20Advanced%20Network%20Scanner)
+
+</div>
 
 ---
 
-# Legal Notice
+## 📋 Supported Services & Protocols
 
-⚠️ **Only scan systems you own or have explicit permission to scan.**
+**30+ Services Recognized:**
 
-Unauthorized port scanning may be illegal in your jurisdiction. Always obtain written permission before scanning any system you do not own.
+SSH • HTTP/HTTPS • FTP • SMTP/POP3/IMAP • DNS • SNMP • NTP • NFS • SMTP • MySQL • PostgreSQL • MongoDB • Redis • Elasticsearch • Memcached • RabbitMQ • CouchDB • Apache • Nginx • IIS • Tomcat • Jenkins • Docker • Kubernetes • Cassandra • Kibana • Grafana • Prometheus • Jaeger • and more...
 
 ---
 
-# License
+## 📜 License
 
-MIT
+This project is licensed under the **MIT License** - see the [LICENSE](./LICENSE) file for details.
+
+```
+MIT License - Free for personal and commercial use
+```
+
+---
+
+## 🙏 Acknowledgments
+
+- Inspired by **Nmap**, **RustScan**, and **Masscan**
+- Built with Go's powerful networking libraries
+- NVD API integration for vulnerability data
+- Thanks to the security research community
+
+---
+
+<div align="center">
+
+**Made with ❤️ by [byte-err404](https://github.com/byte-err404)**
+
+*Last Updated: 2026-05-13 | Version: 1.0.0*
+
+[⬆ Back to Top](#-butescan--advanced-network-scanner)
+
+</div>
+
 ````
