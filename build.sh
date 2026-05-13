@@ -4,7 +4,7 @@
 set -e
 
 echo "================================"
-echo "  GoScanner - Build Script"
+echo "  Butescan - Build Script"
 echo "================================"
 
 # Check Go installation
