@@ -113,7 +113,7 @@ func runScan(cmd *cobra.Command, args []string) error {
 
 	startTime := time.Now()
 
-	bold.Printf("\n[*] Starting GoScanner at %s\n", startTime.Format("2006-01-02 15:04:05"))
+	bold.Printf("\n[*] Starting Butescan at %s\n", startTime.Format("2006-01-02 15:04:05"))
 	cyan.Printf("[*] Targets: %d host(s) | Ports: %d | Threads: %d | Timeout: %dms\n\n",
 		len(targets), len(ports), threads, timeout)
 
