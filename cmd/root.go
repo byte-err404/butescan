@@ -46,7 +46,7 @@ var banner = `
 
 var rootCmd = &cobra.Command{
 	Use:   "butescan -t <target>",
-	Short: "Network scanning tool",
+	Short: "Advanced network scanner",
 	RunE:  runScan,
 }
 
@@ -56,18 +56,23 @@ func Execute() error {
 
 func init() {
 
-	rootCmd.Flags().StringVarP(&targetHost, "target", "t", "", "Target host/IP or CIDR (required)")
+	rootCmd.Flags().StringVarP(&targetHost, "target", "t", "", "Target host/CIDR (required)")
 	rootCmd.Flags().StringVarP(&portRange, "ports", "p", "1-1024", "Port range")
 	rootCmd.Flags().IntVar(&topPorts, "top-ports", 0, "Top ports")
 
 	rootCmd.Flags().IntVarP(&timeout, "timeout", "T", 1000, "Timeout ms")
 	rootCmd.Flags().IntVarP(&threads, "threads", "c", 1000, "Threads")
 
-	rootCmd.Flags().BoolVarP(&osDetect, "os", "O", false, "OS detection")
-	rootCmd.Flags().BoolVarP(&aggressiveMode, "A", "A", false, "Aggressive mode")
+	// ===== NMAP STYLE FLAGS =====
+	rootCmd.Flags().BoolP("A", "A", false, "Aggressive scan (OS + version + scripts)")
+	rootCmd.Flags().BoolP("sV", "V", false, "Version detection")
+	rootCmd.Flags().BoolP("O", "O", false, "OS detection")
+	rootCmd.Flags().Bool("Pn", false, "Skip host discovery")
+	rootCmd.Flags().String("T", "3", "Timing (0-5)")
+
+	// ===== EXTRA =====
 	rootCmd.Flags().BoolVar(&cveCheck, "cve", false, "CVE check")
 	rootCmd.Flags().BoolVarP(&verbose, "verbose", "v", false, "Verbose")
-
 	rootCmd.Flags().StringSliceVar(&runScripts, "script", []string{}, "Scripts")
 
 	rootCmd.MarkFlagRequired("target")
@@ -75,12 +80,7 @@ func init() {
 
 func runScan(cmd *cobra.Command, args []string) error {
 
-	if aggressiveMode {
-		osDetect = true
-		bannerGrab = true
-		runScripts = append(runScripts, "http-headers", "ssh-hostkey")
-	}
-
+	// Colors
 	green := color.New(color.FgGreen).PrintfFunc()
 	red := color.New(color.FgRed).PrintfFunc()
 	yellow := color.New(color.FgYellow).PrintfFunc()
@@ -88,6 +88,28 @@ func runScan(cmd *cobra.Command, args []string) error {
 
 	fmt.Println(banner)
 
+	// ===== FLAGS LOGIC =====
+	if aggressiveMode {
+		osDetect = true
+		versionDetect = true
+		runScripts = append(runScripts, "http-headers", "ssh-hostkey")
+	}
+
+	if v, _ := cmd.Flags().GetBool("A"); v {
+		osDetect = true
+		versionDetect = true
+		runScripts = append(runScripts, "http-headers")
+	}
+
+	if v, _ := cmd.Flags().GetBool("sV"); v {
+		versionDetect = true
+	}
+
+	if v, _ := cmd.Flags().GetBool("O"); v {
+		osDetect = true
+	}
+
+	// ===== TARGETS =====
 	targets, err := resolveTargets(targetHost)
 	if err != nil {
 		return err
@@ -100,10 +122,12 @@ func runScan(cmd *cobra.Command, args []string) error {
 
 	start := time.Now()
 
-	cyan("[*] Targets: %d | Ports: %d\n", len(targets), len(ports))
+	cyan("[*] Targets: %d | Ports: %d | Threads: %d\n",
+		len(targets), len(ports), threads)
 
 	var allResults []*scanner.ScanResult
 
+	// ===== SCAN LOOP =====
 	for _, target := range targets {
 
 		yellow("[>] Scanning %s\n", target)
@@ -122,25 +146,24 @@ func runScan(cmd *cobra.Command, args []string) error {
 			continue
 		}
 
+		// ===== OS DETECT =====
 		if osDetect {
 			fp := fingerprint.New(target, time.Duration(timeout)*time.Millisecond)
 			result.OS = fp.Detect(result.OpenPorts)
-			if result.OS != "" {
-				green("[OS] %s\n", result.OS)
-			}
 		}
 
+		// ===== CVE =====
 		if cveCheck {
-			c := cve.NewClient()
-
+			client := cve.NewClient()
 			for i, p := range result.OpenPorts {
 				if p.Service != "" {
-					cves, _ := c.Lookup(p.Service, p.Version)
+					cves, _ := client.Lookup(p.Service, p.Version)
 					result.OpenPorts[i].CVEs = append(result.OpenPorts[i].CVEs, cves...)
 				}
 			}
 		}
 
+		// ===== SCRIPTS =====
 		if len(runScripts) > 0 {
 			engine := scripts.New()
 
@@ -160,8 +183,9 @@ func runScan(cmd *cobra.Command, args []string) error {
 		allResults = append(allResults, result)
 	}
 
-	fmt.Printf("\nDone in %s\n", time.Since(start))
+	fmt.Printf("\n[*] Done in %s\n", time.Since(start))
 
+	// ===== REPORT =====
 	if outputFile != "" {
 		rep := report.New(outputFmt)
 		rep.Save(allResults, outputFile)
