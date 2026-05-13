@@ -22,7 +22,7 @@ A fast, feature-rich network scanner written in Go — inspired by **nmap** and 
 - Go 1.21+ → https://go.dev/dl/
 
 ```bash
-git clone https://github.com/yourname/butescan
+git clone https://github.com/byte-err404/butescan
 cd butescan
 chmod +x build.sh
 ./build.sh
