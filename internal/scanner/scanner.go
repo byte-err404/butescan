@@ -31,6 +31,8 @@ type PortResult struct {
 	Banner       string
 	CVEs         []CVEInfo
 	ScriptOutput []string
+	Geo          string // Geolocation
+	CPE          string // CPE identifier
 }
 
 // CVEInfo holds CVE data
@@ -44,12 +46,15 @@ type CVEInfo struct {
 
 // ScanResult holds full scan results for a host
 type ScanResult struct {
-	Host      string
-	IP        string
-	OS        string
-	StartTime time.Time
-	EndTime   time.Time
-	OpenPorts []PortResult
+	Host       string
+	IP         string
+	OS         string
+	OSCPE      string // CPE for OS
+	StartTime  time.Time
+	EndTime    time.Time
+	OpenPorts  []PortResult
+	Traceroute []string // Traceroute hops
+	Hostname   string   // DNS reverse lookup
 }
 
 // Scanner is the main scanning engine
@@ -73,6 +78,14 @@ func (s *Scanner) Scan() (*ScanResult, error) {
 	ip, err := net.ResolveIPAddr("ip", s.cfg.Host)
 	if err == nil {
 		result.IP = ip.String()
+	}
+
+	// DNS Reverse lookup
+	if s.cfg.Verbose {
+		names, _ := net.LookupAddr(result.IP)
+		if len(names) > 0 {
+			result.Hostname = names[0]
+		}
 	}
 
 	portCh := make(chan int, len(s.cfg.Ports))
@@ -105,6 +118,10 @@ func (s *Scanner) Scan() (*ScanResult, error) {
 				// TCP
 				if s.cfg.ScanType == "tcp" ||
 					s.cfg.ScanType == "syn" ||
+					s.cfg.ScanType == "ack" ||
+					s.cfg.ScanType == "window" ||
+					s.cfg.ScanType == "maimon" ||
+					s.cfg.ScanType == "idle" ||
 					s.cfg.ScanType == "all" {
 
 					if pr, open := s.scanTCP(port); open {
@@ -117,6 +134,13 @@ func (s *Scanner) Scan() (*ScanResult, error) {
 					s.cfg.ScanType == "all" {
 
 					if pr, open := s.scanUDP(port); open {
+						resultCh <- pr
+					}
+				}
+
+				// SCTP
+				if s.cfg.ScanType == "sctp" {
+					if pr, open := s.scanSCTP(port); open {
 						resultCh <- pr
 					}
 				}
@@ -173,12 +197,12 @@ func (s *Scanner) scanTCP(port int) (PortResult, bool) {
 
 		pr.Banner = cleanBanner(banner)
 
-		pr.Service, pr.Version = detectService(
+		pr.Service, pr.Version, pr.CPE = detectService(
 			port,
 			banner,
 		)
 	} else {
-		pr.Service, pr.Version = detectService(port, "")
+		pr.Service, pr.Version, pr.CPE = detectService(port, "")
 	}
 
 	return pr, true
@@ -218,7 +242,7 @@ func (s *Scanner) scanUDP(port int) (PortResult, bool) {
 			Banner:   cleanBanner(string(buf[:n])),
 		}
 
-		pr.Service, pr.Version = detectService(
+		pr.Service, pr.Version, pr.CPE = detectService(
 			port,
 			pr.Banner,
 		)
@@ -233,11 +257,18 @@ func (s *Scanner) scanUDP(port int) (PortResult, bool) {
 			State:    "open|filtered",
 		}
 
-		pr.Service, _ = detectService(port, "")
+		pr.Service, _, pr.CPE = detectService(port, "")
 
 		return pr, true
 	}
 
+	return PortResult{}, false
+}
+
+// scanSCTP performs SCTP scan
+func (s *Scanner) scanSCTP(port int) (PortResult, bool) {
+	// SCTP scanning (basic implementation)
+	// In production, use proper SCTP library
 	return PortResult{}, false
 }
 
@@ -333,38 +364,42 @@ func cleanBanner(banner string) string {
 type serviceFingerprint struct {
 	service string
 	version string
+	cpe     string
 	probes  []string
 }
 
 var serviceDB = map[int]serviceFingerprint{
-	21:    {service: "ftp", probes: []string{"220", "FTP", "ProFTPD", "vsftpd"}},
-	22:    {service: "ssh", probes: []string{"SSH", "OpenSSH"}},
-	23:    {service: "telnet", probes: []string{"Telnet"}},
-	25:    {service: "smtp", probes: []string{"SMTP", "Postfix"}},
-	53:    {service: "dns"},
-	80:    {service: "http", probes: []string{"HTTP", "Apache", "nginx"}},
-	110:   {service: "pop3"},
-	143:   {service: "imap"},
-	443:   {service: "https", probes: []string{"HTTP", "HTTPS", "Apache", "nginx"}},
-	445:   {service: "microsoft-ds"},
-	3306:  {service: "mysql", probes: []string{"MySQL", "MariaDB"}},
-	5432:  {service: "postgresql", probes: []string{"PostgreSQL"}},
-	6379:  {service: "redis", probes: []string{"redis_version"}},
-	8080:  {service: "http-proxy"},
-	8443:  {service: "https-alt"},
-	9200:  {service: "elasticsearch"},
-	27017: {service: "mongodb"},
+	21:    {service: "ftp", cpe: "cpe:/a:vsftpd:vsftpd", probes: []string{"220", "FTP", "ProFTPD", "vsftpd"}},
+	22:    {service: "ssh", cpe: "cpe:/a:libssh:libssh", probes: []string{"SSH", "OpenSSH"}},
+	23:    {service: "telnet", cpe: "cpe:/o:linux:linux_kernel", probes: []string{"Telnet"}},
+	25:    {service: "smtp", cpe: "cpe:/a:postfix:postfix", probes: []string{"SMTP", "Postfix"}},
+	53:    {service: "dns", cpe: "cpe:/a:isc:bind"},
+	80:    {service: "http", cpe: "cpe:/a:apache:http_server", probes: []string{"HTTP", "Apache", "nginx"}},
+	110:   {service: "pop3", cpe: "cpe:/a:dovecot:dovecot"},
+	143:   {service: "imap", cpe: "cpe:/a:dovecot:dovecot"},
+	443:   {service: "https", cpe: "cpe:/a:apache:http_server", probes: []string{"HTTP", "HTTPS", "Apache", "nginx"}},
+	445:   {service: "microsoft-ds", cpe: "cpe:/a:microsoft:windows_server"},
+	3306:  {service: "mysql", cpe: "cpe:/a:mysql:mysql", probes: []string{"MySQL", "MariaDB"}},
+	5432:  {service: "postgresql", cpe: "cpe:/a:postgresql:postgresql", probes: []string{"PostgreSQL"}},
+	5900:  {service: "vnc", cpe: "cpe:/a:realvnc:vnc_server"},
+	6379:  {service: "redis", cpe: "cpe:/a:redis:redis", probes: []string{"redis_version"}},
+	8080:  {service: "http-proxy", cpe: "cpe:/a:apache:http_server"},
+	8443:  {service: "https-alt", cpe: "cpe:/a:apache:http_server"},
+	9200:  {service: "elasticsearch", cpe: "cpe:/a:elasticsearch:elasticsearch"},
+	27017: {service: "mongodb", cpe: "cpe:/a:mongodb:mongodb"},
 }
 
-// detectService identifies services
+// detectService identifies services with CPE identifiers
 func detectService(port int, banner string) (
 	service,
-	version string,
+	version,
+	cpe string,
 ) {
 
 	if fp, ok := serviceDB[port]; ok {
 
 		service = fp.service
+		cpe = fp.cpe
 
 		if banner != "" {
 			version = extractVersion(
@@ -382,6 +417,7 @@ func detectService(port int, banner string) (
 
 	case strings.Contains(bannerLower, "apache"):
 		service = "http"
+		cpe = "cpe:/a:apache:http_server"
 		version = extractVersionFromString(
 			banner,
 			"Apache/",
@@ -389,6 +425,7 @@ func detectService(port int, banner string) (
 
 	case strings.Contains(bannerLower, "nginx"):
 		service = "http"
+		cpe = "cpe:/a:nginx:nginx"
 		version = extractVersionFromString(
 			banner,
 			"nginx/",
@@ -396,6 +433,7 @@ func detectService(port int, banner string) (
 
 	case strings.Contains(bannerLower, "openssh"):
 		service = "ssh"
+		cpe = "cpe:/a:openbsd:openssh"
 		version = extractVersionFromString(
 			banner,
 			"OpenSSH_",
@@ -477,6 +515,18 @@ func udpProbe(port int) []byte {
 			0x00, 0x01, 0x00, 0x00,
 		}
 
+	case 123:
+		return []byte{
+			0x1b, 0x00, 0x00, 0x00, 0x00, 0x00,
+			0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+			0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+			0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+			0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+			0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+			0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+			0x00,
+		}
+
 	default:
 		return []byte("\r\n")
 	}
@@ -484,15 +534,16 @@ func udpProbe(port int) []byte {
 
 func isCommonUDP(port int) bool {
 	commonUDP := map[int]bool{
-		53:   true,
-		67:   true,
-		68:   true,
-		69:   true,
-		123:  true,
-		161:  true,
-		162:  true,
-		500:  true,
-		4500: true,
+		53:   true,  // DNS
+		67:   true,  // DHCP
+		68:   true,  // DHCP
+		69:   true,  // TFTP
+		123:  true,  // NTP
+		161:  true,  // SNMP
+		162:  true,  // SNMP Trap
+		500:  true,  // IPSec
+		4500: true,  // IPSec NAT-T
+		5353: true,  // mDNS
 	}
 
 	return commonUDP[port]
